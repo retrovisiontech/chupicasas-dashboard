@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chupicasas — Property Operations</title>
+<style>
+  :root{
+    --bg:#0a0f1c;--panel:#111826;--panel2:#0d141f;--ink:#eaf0fb;--muted:#7e8ba6;--faint:#59657f;--line:#1d2740;
+    --accent:#38bdf8;--accent2:#2dd4bf;
+    --open:#f2537b;--prog:#f6a935;--occ:#2ecf80;--vacant:#7c8bb0;
+    --urgent:#ff4d6d;--normal:#4d9bff;--low:#6b7a99;--shadow:0 8px 30px rgba(0,0,0,.5);
+  }
+  *{box-sizing:border-box}html,body{margin:0}
+  body{font-family:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;font-size:16px;display:flex;min-height:100vh}
+  .rail{width:216px;flex-shrink:0;background:linear-gradient(180deg,#0d1422,#0a0f1a);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;position:sticky;top:0;height:100vh}
+  .brand{display:flex;align-items:center;gap:11px;padding:6px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .brand .logo{width:42px;height:42px;border-radius:11px;background:linear-gradient(145deg,#123040,#0b1c29);border:1px solid #1c3b52;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(56,189,248,.3)}
+  .brand h1{margin:0;font-size:1.08rem;font-weight:800;letter-spacing:1.5px;background:linear-gradient(90deg,#38bdf8,#2dd4bf);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .brand span{font-size:.68rem;color:var(--faint);letter-spacing:.5px;display:block}
+  .nav{display:flex;flex-direction:column;gap:3px}
+  .nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;color:var(--muted);font-weight:600;font-size:.92rem;cursor:pointer}
+  .nav a.active{background:rgba(56,189,248,.12);color:#bfe6fb;border:1px solid rgba(56,189,248,.22)}
+  .nav a:hover:not(.active){background:#111a2b;color:#cfd9ee}
+  .nav svg{width:18px;height:18px;flex-shrink:0}
+  .railfoot{margin-top:auto;font-size:.72rem;color:var(--faint);padding:10px 12px;border-top:1px solid var(--line)}
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;gap:16px;padding:16px 26px;border-bottom:1px solid var(--line);background:rgba(10,15,28,.8);backdrop-filter:blur(6px);position:sticky;top:0;z-index:30}
+  .topbar h2{margin:0;font-size:1.15rem;font-weight:700}
+  .topbar .sub{color:var(--faint);font-size:.82rem}
+  .filters{margin-left:auto;display:flex;gap:8px}
+  .fchip{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:7px 13px;border-radius:20px;font-size:.8rem;font-weight:700;cursor:pointer;transition:.15s}
+  .fchip.on{background:rgba(56,189,248,.14);border-color:rgba(56,189,248,.4);color:#bfe6fb}
+  .fchip:hover{color:#dbe6fb}
+  .content{padding:22px 26px 40px}
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  @media(max-width:1300px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  .kpi{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:14px 15px}
+  .kpi .n{font-size:1.6rem;font-weight:800;letter-spacing:.2px}
+  .kpi .l{font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+  .kpi.a1 .n{color:var(--accent)}.kpi.a2 .n{color:var(--occ)}.kpi.a3 .n{color:var(--vacant)}.kpi.a4 .n{color:#ffd27d}.kpi.a5 .n{color:var(--open)}.kpi.a6 .n{color:#a78bfa}
+  .grid{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;margin-top:16px}
+  @media(max-width:1080px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.rail{display:none}}
+  .card{background:linear-gradient(160deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+  .card .ch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .card .ch h3{margin:0;font-size:.98rem;font-weight:700;letter-spacing:.3px;color:#d4def2}
+  .card .ch .hint{font-size:.75rem;color:var(--faint)}
+  .seg{display:flex;background:#0b1424;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .seg button{background:none;border:none;color:var(--muted);font-weight:700;font-size:.75rem;padding:6px 11px;cursor:pointer}
+  .seg button.on{background:rgba(56,189,248,.16);color:#bfe6fb}
+  .mapwrap{position:relative}
+  #map{display:block;width:100%;height:auto;background:radial-gradient(700px 440px at 50% 38%,#0f2138 0%,#0a1220 100%)}
+  .maplegend{display:flex;flex-wrap:wrap;gap:14px;padding:12px 18px;border-top:1px solid var(--line);font-size:.8rem;color:#aab7d4}
+  .maplegend span{display:flex;align-items:center;gap:6px;font-weight:600}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:0 0 7px currentColor}
+  .tip{position:absolute;pointer-events:none;background:#0b1424;border:1px solid #26406a;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.6);padding:11px 13px;font-size:.83rem;max-width:280px;display:none;z-index:50;color:#dfe8fb}
+  .tip b{color:var(--accent)}
+  .outliers{display:flex;gap:10px;padding:11px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .ocard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 11px;cursor:pointer;font-size:.82rem;font-weight:600;display:flex;align-items:center;gap:8px;color:#cdd9f0}
+  .ocard:hover{border-color:var(--accent)}
+  .rightcol{display:flex;flex-direction:column;gap:16px}
+  .vac{padding:6px 0}
+  .vacrow{display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--line)}
+  .vacrow:last-child{border-bottom:none}
+  .vacrow .vmain{flex:1;min-width:0}
+  .vacrow .va{font-weight:700;font-size:.9rem;color:#eef3ff;cursor:pointer}
+  .vacrow .vm{font-size:.76rem;color:var(--muted);margin-top:1px}
+  .vacrow .vr{font-weight:800;color:#ffd27d;font-size:.85rem;white-space:nowrap}
+  .vstage{background:#0b1424;color:#dfe8fb;border:1px solid #26406a;border-radius:8px;padding:5px 7px;font-weight:600;font-size:.76rem}
+  .lenders{padding:8px 18px 14px}
+  .lrow{margin:11px 0}
+  .lrow .lt{display:flex;justify-content:space-between;align-items:center;font-size:.84rem;margin-bottom:5px}
+  .lrow .ln{display:flex;align-items:center;gap:7px;font-weight:700;color:#e7eefc}
+  .lrow .lp{color:#cdd9f0;font-weight:700}
+  .lrow .lc{font-size:.72rem;color:var(--faint);font-weight:600}
+  .bar{height:9px;background:#0c1424;border-radius:6px;overflow:hidden;border:1px solid var(--line)}
+  .bar>i{display:block;height:100%;border-radius:6px}
+  .snap{padding:16px 18px}
+  .snaprow{margin-bottom:14px}.snaprow:last-child{margin-bottom:0}
+  .snaplbl{display:flex;justify-content:space-between;font-size:.82rem;color:var(--muted);font-weight:600;margin-bottom:6px}
+  .groups{max-height:340px;overflow-y:auto;padding:6px 12px 12px}
+  .groups::-webkit-scrollbar{width:7px}.groups::-webkit-scrollbar-thumb{background:#1e2c48;border-radius:4px}
+  .group-title{font-weight:800;font-size:.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:1px;padding:8px 4px 4px;position:sticky;top:0;background:var(--panel)}
+  .prop{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 11px;margin:7px 0;cursor:pointer;transition:.15s;border-left:4px solid var(--occ)}
+  .prop:hover{border-color:#2b3a5c}
+  .prop.open{border-left-color:var(--open)}.prop.prog{border-left-color:var(--prog)}.prop.vacant{border-left-color:var(--vacant)}
+  .prop.hide{display:none}
+  .prop .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .prop .addr{font-weight:700;font-size:.88rem;color:#eaf1ff}
+  .prop .meta{font-size:.77rem;color:var(--muted);margin-top:2px}
+  .lchip{font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:20px;color:#0a0f1c}
+  .chip{font-size:.64rem;font-weight:800;padding:3px 8px;border-radius:20px;color:#0a0f1c;white-space:nowrap}
+  .chip.open{background:var(--open);color:#fff}.chip.prog{background:var(--prog)}.chip.occ{background:var(--occ)}.chip.vacant{background:var(--vacant);color:#0a0f1c}
+  .dup{font-size:.6rem;font-weight:800;color:#9fb2cc;background:#141d30;border:1px solid #26324e;border-radius:5px;padding:2px 5px;margin-left:6px;letter-spacing:.5px}
+  .rtable{width:100%;border-collapse:collapse;font-size:.9rem}
+  .rtable th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.7px;color:var(--faint);font-weight:700;padding:11px 18px;border-bottom:1px solid var(--line)}
+  .rtable td{padding:12px 18px;border-bottom:1px solid var(--line);vertical-align:top}
+  .rtable tr:hover td{background:rgba(56,189,248,.04)}
+  .rtable .addr{font-weight:700;color:#eaf1ff;white-space:nowrap}
+  .rtable .note{color:var(--muted)}
+  .pri{font-size:.68rem;font-weight:800;padding:3px 9px;border-radius:6px;color:#fff;white-space:nowrap}
+  .pri.urgent{background:var(--urgent)}.pri.normal{background:var(--normal)}.pri.low{background:var(--low)}
+  select.mini{background:#0b1424;color:#dfe8fb;border:1px solid #26406a;border-radius:8px;padding:5px 8px;font-weight:600;font-size:.8rem}
+  .btn{background:linear-gradient(120deg,#38bdf8,#2dd4bf);color:#052430;border:none;padding:8px 15px;border-radius:9px;font-weight:800;cursor:pointer;font-size:.85rem}
+  .btn:hover{filter:brightness(1.07)}
+  .mock{font-size:.75rem;color:#8ea3c6}
+  circle.pin{cursor:pointer;transition:.12s}circle.pin:hover{stroke:#fff;stroke-width:2.5}
+  circle.pin.dim{opacity:.16}
+  .arealbl{font-size:11px;fill:#3d5680;font-weight:700;letter-spacing:1px}
+</style>
+</head>
+<body>
+  <aside class="rail">
+    <div class="brand">
+      <div class="logo"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></div>
+      <div><h1>CHUPICASAS</h1><span>Property Ops</span></div>
+    </div>
+    <nav class="nav">
+      <a class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Overview</a>
+      <a onclick="setFilter('vacant')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 12h4v9h-4z"/></svg>Vacancies</a>
+      <a onclick="setMode('lender')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 10l9-6 9 6M4 10v10h16V10M2 22h20M9 14h6"/></svg>Lenders</a>
+      <a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 00-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 005.4-5.4l-2.6 2.6-2.4-2.4z"/></svg>Repairs</a>
+    </nav>
+    <div class="railfoot" id="railfoot"></div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><h2>Portfolio Overview</h2><div class="sub">San Antonio &middot; Pleasanton &middot; Kerrville, TX</div></div>
+      <div class="filters" id="filters">
+        <div class="fchip on" data-f="all" onclick="setFilter('all')">All</div>
+        <div class="fchip" data-f="open" onclick="setFilter('open')">Open</div>
+        <div class="fchip" data-f="prog" onclick="setFilter('prog')">In progress</div>
+        <div class="fchip" data-f="vacant" onclick="setFilter('vacant')">Vacant</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="mock" style="margin-bottom:14px">CHUPICASAS &mdash; portfolio map, vacancies &amp; repair tracker. (Public view: tenant names &amp; loan balances hidden.)</div>
+      <div class="kpis">
+        <div class="kpi a1"><div class="n" id="k-sites">-</div><div class="l">Properties</div></div>
+        <div class="kpi a2"><div class="n" id="k-occ">-</div><div class="l">Occupancy</div></div>
+        <div class="kpi a3"><div class="n" id="k-vac">-</div><div class="l">Vacant Units</div></div>
+        <div class="kpi a4"><div class="n" id="k-risk">-</div><div class="l">Rent at Risk</div></div>
+        <div class="kpi a6"><div class="n" id="k-debt">-</div><div class="l">Units</div></div>
+        <div class="kpi a5"><div class="n" id="k-open">-</div><div class="l">Open Repairs</div></div>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="ch"><h3>Property Map &mdash; San Antonio Metro</h3>
+            <div class="seg"><button id="m-status" class="on" onclick="setMode('status')">Status</button><button id="m-lender" onclick="setMode('lender')">Lender</button></div>
+          </div>
+          <div class="mapwrap"><svg id="map" viewBox="0 0 820 500" preserveAspectRatio="xMidYMid meet"></svg><div class="tip" id="tip"></div></div>
+          <div class="outliers" id="outliers"></div>
+          <div class="maplegend" id="legend"></div>
+        </div>
+        <div class="rightcol">
+          <div class="card">
+            <div class="ch"><h3>&#9888;&#65039; Vacancies</h3><span class="hint" id="vac-sum"></span></div>
+            <div class="vac" id="vacancies"></div>
+          </div>
+          <div class="card">
+            <div class="ch"><h3>&#127974; Lenders</h3><span class="hint" id="debt-sum"></span></div>
+            <div class="lenders" id="lenders"></div>
+          </div>
+          <div class="card"><div class="ch"><h3>Properties by Area</h3></div><div class="groups" id="groups"></div></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="ch"><h3>Repair Jobs</h3><button class="btn" onclick="addRepair()">+ Add Repair</button></div>
+        <table class="rtable"><thead><tr><th>Unit</th><th>Priority</th><th>Status</th><th>Description</th></tr></thead><tbody id="repairs"></tbody></table>
+      </div>
+    </div>
+  </div>
+<script>
+const UNITS = [{"site": "1035 Eldorado St", "unit": "", "label": "1035 Eldorado St", "area": "Eldorado", "beds": 3, "baths": 1, "sqft": 1456, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "SAN ANTONIO", "zip": "78225", "lat": 29.389687, "lon": -98.51749, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "1033 Eldorado St", "unit": "", "label": "1033 Eldorado St", "area": "Eldorado", "beds": 1, "baths": 1, "sqft": 480, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "SAN ANTONIO", "zip": "78225", "lat": 29.389687, "lon": -98.517454, "approx": false, "lender": "", "principal": 0, "rate": 0, "maturity": ""}, {"site": "1037 Eldorado St", "unit": "", "label": "1037 Eldorado St", "area": "Eldorado", "beds": 1, "baths": 1, "sqft": 400, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "SAN ANTONIO", "zip": "78225", "lat": 29.389687, "lon": -98.517525, "approx": false, "lender": "", "principal": 0, "rate": 0, "maturity": ""}, {"site": "109 Nancy Pl", "unit": "A", "label": "109 Nancy Pl \u00b7 Unit A", "area": "Nancy", "beds": 2, "baths": 1, "sqft": 420, "tenant": "", "rent": 1100, "exp": 1100, "vacant": false, "city": "SAN ANTONIO", "zip": "78204", "lat": 29.403318, "lon": -98.516603, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "109 Nancy Pl", "unit": "B", "label": "109 Nancy Pl \u00b7 Unit B", "area": "Nancy", "beds": 1, "baths": 1, "sqft": 400, "tenant": "", "rent": 0, "exp": 1100, "vacant": true, "city": "SAN ANTONIO", "zip": "78204", "lat": 29.403318, "lon": -98.516603, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "111 Nancy Pl", "unit": "A", "label": "111 Nancy Pl \u00b7 Unit A", "area": "Nancy", "beds": 1, "baths": 1, "sqft": 456, "tenant": "", "rent": 1100, "exp": 1100, "vacant": false, "city": "SAN ANTONIO", "zip": "78204", "lat": 29.403323, "lon": -98.516649, "approx": false, "lender": "August REI LLC", "principal": 0, "rate": 0, "maturity": ""}, {"site": "111 Nancy Pl", "unit": "B (trailer)", "label": "111 Nancy Pl \u00b7 Unit B (trailer)", "area": "Nancy", "beds": 0, "baths": 1, "sqft": 200, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "SAN ANTONIO", "zip": "78204", "lat": 29.403323, "lon": -98.516649, "approx": false, "lender": "August REI LLC", "principal": 0, "rate": 0, "maturity": ""}, {"site": "327 Bustillos", "unit": "A", "label": "327 Bustillos \u00b7 Unit A", "area": "Bustillos", "beds": 3, "baths": 1, "sqft": 1200, "tenant": "", "rent": 0, "exp": 1500, "vacant": true, "city": "SAN ANTONIO", "zip": "78214", "lat": 29.36878, "lon": -98.482775, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "327 Bustillos", "unit": "B", "label": "327 Bustillos \u00b7 Unit B", "area": "Bustillos", "beds": 3, "baths": 1, "sqft": 1200, "tenant": "", "rent": 1500, "exp": 1500, "vacant": false, "city": "SAN ANTONIO", "zip": "78214", "lat": 29.36878, "lon": -98.482775, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "331 Bustillos", "unit": "", "label": "331 Bustillos", "area": "Bustillos", "beds": 0, "baths": 0, "sqft": 0, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "SAN ANTONIO", "zip": "78214", "lat": 29.368856, "lon": -98.482709, "approx": false, "lender": "", "principal": 0, "rate": 0, "maturity": ""}, {"site": "335 Bustillos", "unit": "A", "label": "335 Bustillos \u00b7 Unit A", "area": "Bustillos", "beds": 3, "baths": 1, "sqft": 1200, "tenant": "", "rent": 1500, "exp": 1500, "vacant": false, "city": "SAN ANTONIO", "zip": "78214", "lat": 29.368937, "lon": -98.482641, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "335 Bustillos", "unit": "B", "label": "335 Bustillos \u00b7 Unit B", "area": "Bustillos", "beds": 3, "baths": 1, "sqft": 1200, "tenant": "", "rent": 0, "exp": 1500, "vacant": true, "city": "SAN ANTONIO", "zip": "78214", "lat": 29.368937, "lon": -98.482641, "approx": false, "lender": "FCB", "principal": 0, "rate": 0, "maturity": ""}, {"site": "227 Bustillos", "unit": "", "label": "227 Bustillos", "area": "Bustillos", "beds": 3, "baths": 1, "sqft": 0, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "SAN ANTONIO", "zip": "78204", "lat": 29.366751, "lon": -98.484312, "approx": false, "lender": "August REI LLC", "principal": 0, "rate": 0, "maturity": ""}, {"site": "307 Kopplow Pl", "unit": "", "label": "307 Kopplow Pl", "area": "Other", "beds": 3, "baths": 1, "sqft": 889, "tenant": "", "rent": 1400, "exp": 1400, "vacant": false, "city": "SAN ANTONIO", "zip": "78221", "lat": 29.340522, "lon": -98.500262, "approx": false, "lender": "Kiavi", "principal": 0, "rate": 0, "maturity": ""}, {"site": "2715 Misty Spray Dr", "unit": "", "label": "2715 Misty Spray Dr", "area": "Other", "beds": 3, "baths": 1, "sqft": 894, "tenant": "", "rent": 1500, "exp": 1500, "vacant": false, "city": "SAN ANTONIO", "zip": "78224", "lat": 29.346136, "lon": -98.548823, "approx": false, "lender": "Encore Bank", "principal": 0, "rate": 0, "maturity": ""}, {"site": "250 Coney St", "unit": "", "label": "250 Coney St", "area": "Other", "beds": 2, "baths": 1, "sqft": 946, "tenant": "", "rent": 1500, "exp": 1500, "vacant": false, "city": "SAN ANTONIO", "zip": "78223", "lat": 29.365867, "lon": -98.443995, "approx": false, "lender": "Encore Bank", "principal": 0, "rate": 0, "maturity": ""}, {"site": "526 W Hildebrand Ave", "unit": "", "label": "526 W Hildebrand Ave", "area": "Hildebrand", "beds": 0, "baths": 0, "sqft": 1256, "tenant": "", "rent": 0, "exp": 2200, "vacant": true, "city": "SAN ANTONIO", "zip": "78212", "lat": 29.466397, "lon": -98.501904, "approx": false, "lender": "Rio Bank", "principal": 0, "rate": 0, "maturity": ""}, {"site": "1121 W Hildebrand Ave", "unit": "", "label": "1121 W Hildebrand Ave", "area": "Hildebrand", "beds": 0, "baths": 0, "sqft": 1293, "tenant": "", "rent": 2500, "exp": 2500, "vacant": false, "city": "SAN ANTONIO", "zip": "78201", "lat": 29.466502, "lon": -98.512085, "approx": false, "lender": "August REI LLC", "principal": 0, "rate": 0, "maturity": ""}, {"site": "146 Aldrich Dr", "unit": "", "label": "146 Aldrich Dr", "area": "Other", "beds": 3, "baths": 2, "sqft": 1104, "tenant": "", "rent": 1500, "exp": 1500, "vacant": false, "city": "SAN ANTONIO", "zip": "78227", "lat": 29.378559, "lon": -98.637036, "approx": false, "lender": "SSBT", "principal": 0, "rate": 0, "maturity": ""}, {"site": "430 Fridell St", "unit": "", "label": "430 Fridell St", "area": "Other", "beds": 5, "baths": 3, "sqft": 2154, "tenant": "", "rent": 2200, "exp": 2200, "vacant": false, "city": "SAN ANTONIO", "zip": "78237", "lat": 29.430431, "lon": -98.579967, "approx": false, "lender": "Encore Bank", "principal": 0, "rate": 0, "maturity": ""}, {"site": "211 Serenade Dr", "unit": "", "label": "211 Serenade Dr", "area": "Other", "beds": 3, "baths": 2, "sqft": 1108, "tenant": "", "rent": 1595, "exp": 1595, "vacant": false, "city": "SAN ANTONIO", "zip": "78216", "lat": 29.53444, "lon": -98.496077, "approx": false, "lender": "Kiavi", "principal": 0, "rate": 0, "maturity": ""}, {"site": "4906 Pharis St", "unit": "", "label": "4906 Pharis St", "area": "Other", "beds": 3, "baths": 2, "sqft": 1392, "tenant": "", "rent": 1500, "exp": 1500, "vacant": false, "city": "PLEASANTON", "zip": "78064", "lat": 28.967, "lon": -98.478, "approx": true, "lender": "Kiavi", "principal": 0, "rate": 0, "maturity": ""}, {"site": "100 Carmichael St", "unit": "", "label": "100 Carmichael St", "area": "Other", "beds": 2, "baths": 1, "sqft": 816, "tenant": "", "rent": 0, "exp": 0, "vacant": false, "city": "KERRVILLE", "zip": "78028", "lat": 30.014905, "lon": -99.118083, "approx": false, "lender": "SSBT", "principal": 0, "rate": 0, "maturity": ""}];
+let REPAIRS = [
+  {addr:"109 Nancy Pl · Unit A", status:"open", pri:"urgent", note:"Water heater leaking in utility closet - tenant reports no hot water."},
+  {addr:"327 Bustillos · Unit A", status:"prog", pri:"normal", note:"Turnover: paint & flooring before re-listing this vacant unit."},
+  {addr:"430 Fridell St", status:"open", pri:"normal", note:"AC not cooling upstairs. Needs technician diagnosis."},
+  {addr:"2715 Misty Spray Dr", status:"done", pri:"low", note:"Replaced broken window latch. Closed out."},
+  {addr:"146 Aldrich Dr", status:"prog", pri:"urgent", note:"Kitchen plumbing backup - plumber on site this week."},
+  {addr:"526 W Hildebrand Ave", status:"open", pri:"low", note:"Make-ready: repaint exterior trim before showing."}
+];
+const COL={open:'#f2537b',prog:'#f6a935',occ:'#2ecf80',vacant:'#7c8bb0'};
+const LCOL={"FCB":'#38bdf8',"Kiavi":'#a78bfa',"Encore Bank":'#34d399',"August REI LLC":'#fb923c',"SSBT":'#f472b6',"Rio Bank":'#facc15',"No loan on file":'#5f6f92'};
+const BEXAR = [[-98.3272, 29.2099], [-98.4073, 29.1144], [-98.8048, 29.2507], [-98.8066, 29.6907], [-98.7788, 29.7202], [-98.7382, 29.7166], [-98.7288, 29.7225], [-98.7341, 29.7295], [-98.7172, 29.7253], [-98.7004, 29.7374], [-98.6603, 29.7416], [-98.6631, 29.7475], [-98.6513, 29.754], [-98.6435, 29.7404], [-98.6034, 29.7399], [-98.6011, 29.75], [-98.5825, 29.7412], [-98.5505, 29.7607], [-98.5265, 29.7404], [-98.5231, 29.7453], [-98.477, 29.7334], [-98.4458, 29.7358], [-98.4383, 29.7156], [-98.427, 29.7174], [-98.4297, 29.724], [-98.417, 29.7314], [-98.4207, 29.7435], [-98.4075, 29.7487], [-98.3983, 29.7376], [-98.3741, 29.731], [-98.3751, 29.7199], [-98.3526, 29.7344], [-98.3386, 29.7218], [-98.3413, 29.7096], [-98.3802, 29.7039], [-98.3763, 29.6871], [-98.3843, 29.6764], [-98.3785, 29.6627], [-98.3638, 29.6667], [-98.3429, 29.6536], [-98.3453, 29.6183], [-98.3122, 29.6018], [-98.2985, 29.5611], [-98.2552, 29.5404], [-98.2585, 29.5549], [-98.2513, 29.5498], [-98.2449, 29.5568], [-98.2335, 29.5548], [-98.2299, 29.5468], [-98.2216, 29.5479], [-98.2297, 29.5429], [-98.219, 29.5237], [-98.2048, 29.5221], [-98.1994, 29.5097], [-98.1909, 29.5096], [-98.1851, 29.4861], [-98.1769, 29.4852], [-98.1833, 29.4965], [-98.1702, 29.4979], [-98.1646, 29.4781], [-98.1495, 29.4758], [-98.1424, 29.4865], [-98.1226, 29.478], [-98.1171, 29.4617], [-98.127, 29.4557], [-98.1207, 29.4466], [-98.1372, 29.4404], [-98.3272, 29.2099]];
+const SVGNS="http://www.w3.org/2000/svg";
+let FILTER='all', MODE='status';
+function money(n){return '$'+Number(n||0).toLocaleString()}
+function k(id,v){document.getElementById(id).textContent=v}
+function repairsFor(l){return REPAIRS.filter(r=>r.addr===l)}
+function unitStatus(u){const rs=repairsFor(u.label);if(rs.some(r=>r.status==='open'))return 'open';if(rs.some(r=>r.status==='prog'))return 'prog';if(u.vacant)return 'vacant';return 'occ';}
+function sites(){const m={};UNITS.forEach(u=>{(m[u.site]=m[u.site]||{site:u.site,area:u.area,city:u.city,zip:u.zip,lat:u.lat,lon:u.lon,approx:u.approx,lender:u.lender||'No loan on file',principal:u.principal,rate:u.rate,maturity:u.maturity,units:[]}).units.push(u)});return Object.values(m)}
+function siteStatus(s){if(s.units.some(u=>unitStatus(u)==='open'))return 'open';if(s.units.some(u=>unitStatus(u)==='prog'))return 'prog';if(s.units.some(u=>u.vacant))return 'vacant';return 'occ';}
+function lkey(s){return s.lender&&s.lender.trim()?s.lender:'No loan on file'}
+function siteColor(s){return MODE==='lender'?(LCOL[lkey(s)]||'#5f6f92'):COL[siteStatus(s)];}
+function matchFilter(status){if(FILTER==='all')return true;if(FILTER==='vacant')return status==='vacant';return status===FILTER;}
+
+function renderKPIs(){
+  const S=sites();const tot=UNITS.length,occ=UNITS.filter(u=>!u.vacant).length;
+  k('k-sites',S.length);k('k-occ',Math.round(occ/tot*100)+'%');
+  k('k-vac',UNITS.filter(u=>u.vacant).length);
+  k('k-risk',money(UNITS.filter(u=>u.vacant).reduce((s,u)=>s+(u.exp||0),0))+'/mo');
+  k('k-debt',UNITS.length);
+  k('k-open',REPAIRS.filter(r=>r.status!=='done').length);
+  document.getElementById('railfoot').innerHTML=S.length+' properties &middot; '+tot+' units<br>Updated Jul 2026';
+}
+function renderVacancies(){
+  const v=UNITS.filter(u=>u.vacant);
+  document.getElementById('vac-sum').textContent=v.length+' units · '+money(v.reduce((s,u)=>s+(u.exp||0),0))+'/mo';
+  const el=document.getElementById('vacancies');el.innerHTML='';
+  if(!v.length){el.innerHTML='<div style="padding:16px 18px;color:var(--muted);font-size:.85rem">No vacant units. &#127881;</div>';return;}
+  v.forEach(u=>{const i=UNITS.indexOf(u);const st=u.vstage||'Vacant';
+    const d=document.createElement('div');d.className='vacrow';
+    d.innerHTML='<div class="vmain"><div class="va" onclick="focusSite(\''+cssid(u.site)+'\')">'+u.label+'</div>'+
+      '<div class="vm">'+u.beds+' bd · '+u.baths+' ba · '+(u.sqft||'?')+' sqft · '+u.zip+'</div></div>'+
+      '<div style="text-align:right"><div class="vr">'+money(u.exp)+'/mo</div>'+
+      '<select class="vstage" onchange="setStage('+i+',this.value)">'+
+      ['Vacant','Make-ready','Listed','Occupied'].map(o=>'<option '+(o===st?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+    el.appendChild(d);});
+}
+function setStage(i,v){if(v==='Occupied'){UNITS[i].vacant=false;UNITS[i].vstage=null;}else{UNITS[i].vstage=v;}renderAll();}
+
+function renderLenders(){
+  const S=sites();const agg={};
+  S.forEach(s=>{const key=lkey(s);(agg[key]=agg[key]||{n:0}).n++;});
+  const max=Math.max(...Object.values(agg).map(x=>x.n),1);
+  document.getElementById('debt-sum').textContent=Object.keys(agg).length+' lenders';
+  const order=Object.keys(agg).sort((a,b)=>agg[b].n-agg[a].n);
+  document.getElementById('lenders').innerHTML=order.map(name=>{
+    const x=agg[name];const c=LCOL[name]||'#5f6f92';
+    return '<div class="lrow"><div class="lt"><span class="ln"><span class="dot" style="background:'+c+';color:'+c+'"></span>'+name+
+      '</span><span class="lp">'+x.n+' prop'+(x.n>1?'s':'')+'</span></div>'+
+      '<div class="bar"><i style="width:'+Math.max(6,Math.round(x.n/max*100))+'%;background:'+c+'"></i></div></div>';
+  }).join('');
+}
+function renderSnapLegend(){
+  const el=document.getElementById('legend');
+  if(MODE==='lender'){
+    const names=[...new Set(sites().map(s=>lkey(s)))];
+    el.innerHTML=names.map(n=>'<span style="color:'+LCOL[n]+'"><i class="dot" style="background:'+LCOL[n]+'"></i><span style="color:#aab7d4">'+n+'</span></span>').join('');
+  }else{
+    el.innerHTML=[['open','Open repair'],['prog','In progress'],['occ','Occupied'],['vacant','Vacant']]
+      .map(a=>'<span style="color:'+COL[a[0]]+'"><i class="dot" style="background:'+COL[a[0]]+'"></i><span style="color:#aab7d4">'+a[1]+'</span></span>').join('');
+  }
+}
+
+const SA=sites().filter(s=>s.city==='SAN ANTONIO'),OUT=sites().filter(s=>s.city!=='SAN ANTONIO');
+const W=820,H=500,PAD=26;
+const COSLAT=Math.cos(29.45*Math.PI/180);
+const _bx=BEXAR.map(p=>[p[0]*COSLAT,p[1]]);
+const _minx=Math.min(..._bx.map(p=>p[0])),_maxx=Math.max(..._bx.map(p=>p[0]));
+const _miny=Math.min(..._bx.map(p=>p[1])),_maxy=Math.max(..._bx.map(p=>p[1]));
+const _scale=Math.min((W-2*PAD)/(_maxx-_minx),(H-2*PAD)/(_maxy-_miny));
+const _offx=PAD+((W-2*PAD)-(_maxx-_minx)*_scale)/2;
+const _offy=PAD+((H-2*PAD)-(_maxy-_miny)*_scale)/2;
+function X(lon){return _offx+(lon*COSLAT-_minx)*_scale}
+function Y(lat){return _offy+(_maxy-lat)*_scale}
+function countyPath(){return BEXAR.map((p,i)=>(i?'L':'M')+X(p[0]).toFixed(1)+' '+Y(p[1]).toFixed(1)).join(' ')+' Z'}
+const pinEls={};
+function renderMap(){
+  const svg=document.getElementById('map');svg.innerHTML='';
+  const defs=document.createElementNS(SVGNS,'defs');
+  defs.innerHTML='<filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg.appendChild(defs);
+  // Bexar County silhouette
+  const d=countyPath();
+  const cp=document.createElementNS(SVGNS,'path');cp.setAttribute('d',d);
+  cp.setAttribute('fill','#0e2137');cp.setAttribute('stroke','#2b5f7e');cp.setAttribute('stroke-width','1.6');cp.setAttribute('stroke-linejoin','round');svg.appendChild(cp);
+  const cp2=document.createElementNS(SVGNS,'path');cp2.setAttribute('d',d);cp2.setAttribute('fill','none');cp2.setAttribute('stroke','#48b0d6');cp2.setAttribute('stroke-width','1');cp2.setAttribute('stroke-linejoin','round');cp2.setAttribute('opacity','.4');svg.appendChild(cp2);
+  txt(svg,X(-98.63),Y(29.135),'BEXAR COUNTY','arealbl');
+  const areas={};SA.forEach(s=>{(areas[s.area]=areas[s.area]||[]).push(s)});
+  Object.keys(areas).forEach(a=>{const xs=areas[a].map(s=>X(s.lon)),ys=areas[a].map(s=>Y(s.lat));txt(svg,xs.reduce((p,v)=>p+v,0)/xs.length-24,ys.reduce((p,v)=>p+v,0)/ys.length-16,a,'arealbl');});
+  SA.forEach(s=>{
+    const st=siteStatus(s),col=siteColor(s),show=matchFilter(st);
+    if(s.units.length>1){const ring=document.createElementNS(SVGNS,'circle');ring.setAttribute('cx',X(s.lon));ring.setAttribute('cy',Y(s.lat));ring.setAttribute('r',12);ring.setAttribute('fill','none');ring.setAttribute('stroke',col);ring.setAttribute('stroke-width',1.3);ring.setAttribute('opacity',show?.5:.1);svg.appendChild(ring);}
+    const c=document.createElementNS(SVGNS,'circle');
+    c.setAttribute('cx',X(s.lon));c.setAttribute('cy',Y(s.lat));c.setAttribute('r',7.5);
+    c.setAttribute('fill',col);c.setAttribute('stroke','rgba(255,255,255,.4)');c.setAttribute('stroke-width',1.4);
+    c.setAttribute('filter','url(#glow)');c.setAttribute('class','pin'+(show?'':' dim'));
+    c.addEventListener('mousemove',e=>showTip(e,s));c.addEventListener('mouseleave',hideTip);c.addEventListener('click',()=>focusSite(cssid(s.site)));
+    svg.appendChild(c);pinEls[cssid(s.site)]=c;
+  });
+  const oc=document.getElementById('outliers');oc.innerHTML='<span style="font-size:.78rem;color:var(--faint);font-weight:600;align-self:center">Outside metro:</span>';
+  OUT.forEach(s=>{const st=siteStatus(s);const d=document.createElement('div');d.className='ocard';d.style.opacity=matchFilter(st)?1:.35;
+    d.innerHTML='<span class="dot" style="background:'+siteColor(s)+';color:'+siteColor(s)+'"></span>'+s.city.charAt(0)+s.city.slice(1).toLowerCase()+' — '+s.site;
+    d.onmousemove=e=>showTip(e,s);d.onmouseleave=hideTip;d.onclick=()=>focusSite(cssid(s.site));oc.appendChild(d);});
+}
+function line(s,a,b,c,d,col){const l=document.createElementNS(SVGNS,'line');l.setAttribute('x1',a);l.setAttribute('y1',b);l.setAttribute('x2',c);l.setAttribute('y2',d);l.setAttribute('stroke',col);s.appendChild(l)}
+function rect(s,x,y,w,h,f,st){const r=document.createElementNS(SVGNS,'rect');r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',w);r.setAttribute('height',h);r.setAttribute('fill',f);r.setAttribute('stroke',st);r.setAttribute('rx',12);s.appendChild(r)}
+function txt(s,x,y,t,cl){const e=document.createElementNS(SVGNS,'text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('class',cl);e.textContent=t;s.appendChild(e)}
+function showTip(e,s){
+  const tip=document.getElementById('tip');const c=LCOL[lkey(s)]||'#5f6f92';
+  let h='<b>'+s.site+'</b>'+(s.units.length>1?' <span style="color:#9fb2cc">('+s.units.length+' units)</span>':'')+'<br>'+s.city+', TX '+s.zip+(s.approx?' <i>(approx)</i>':'')+
+    '<div style="margin:5px 0"><span class="dot" style="width:8px;height:8px;background:'+c+';color:'+c+'"></span> <b style="color:'+c+'">'+lkey(s)+'</b>'+
+    (s.principal?(' · '+money(s.principal)+(s.rate?(' @ '+(s.rate*100).toFixed(2)+'%'):'')):'')+(s.maturity?(' · matures '+s.maturity):'')+'</div>'+
+    '<hr style="border:none;border-top:1px solid #26406a;margin:5px 0">';
+  s.units.forEach(u=>{const us=unitStatus(u);const uc=COL[us];const rs=repairsFor(u.label);
+    h+='<div style="margin:3px 0"><span class="dot" style="width:8px;height:8px;background:'+uc+';color:'+uc+'"></span> '+
+      (u.unit?('Unit '+u.unit):'Home')+' · '+(u.vacant?'<b style="color:'+COL.vacant+'">VACANT</b>':(u.tenant||'Occupied'))+
+      (u.vacant?(' · target '+money(u.exp)):(u.rent?(' · '+money(u.rent)+'/mo'):''))+
+      (rs.length?('<br><span style="color:#9fb2cc;font-size:.9em">&nbsp;&nbsp;&#128295; '+rs.map(r=>r.note).join('; ')+'</span>'):'')+'</div>';});
+  const wrap=document.querySelector('.mapwrap').getBoundingClientRect();tip.style.display='block';tip.innerHTML=h;
+  let x=e.clientX-wrap.left+14,y=e.clientY-wrap.top+14;if(x+290>wrap.width)x-=310;tip.style.left=x+'px';tip.style.top=y+'px';
+}
+function hideTip(){document.getElementById('tip').style.display='none'}
+function focusSite(id){const el=pinEls[id];if(el){el.setAttribute('r',14);setTimeout(()=>el.setAttribute('r',7.5),700);}
+  const row=document.getElementById('row-'+id);if(row){row.scrollIntoView({behavior:'smooth',block:'center'});row.style.outline='2px solid var(--accent)';setTimeout(()=>row.style.outline='',1200);}}
+function cssid(a){return a.replace(/[^a-z0-9]/gi,'')}
+function renderGroups(){
+  const g={};sites().forEach(s=>{(g[s.area]=g[s.area]||[]).push(s)});
+  const order=['Eldorado','Nancy','Bustillos','Hildebrand','Other'];
+  const el=document.getElementById('groups');el.innerHTML='';
+  order.filter(a=>g[a]).forEach(a=>{
+    const box=document.createElement('div');box.innerHTML='<div class="group-title">'+a+' · '+g[a].length+'</div>';
+    g[a].forEach(s=>{const st=siteStatus(s);const label={open:'Open',prog:'In progress',occ:'Occupied',vacant:'Vacant'}[st];
+      const vacU=s.units.filter(u=>u.vacant).length;const c=LCOL[lkey(s)]||'#5f6f92';
+      const d=document.createElement('div');d.className='prop '+st+(matchFilter(st)?'':' hide');d.id='row-'+cssid(s.site);
+      d.innerHTML='<div class="top"><span class="addr">'+s.site+(s.units.length>1?'<span class="dup">'+s.units.length+' UNITS</span>':'')+'</span>'+
+        '<span class="chip '+st+'">'+label+'</span></div>'+
+        '<div class="meta"><span class="lchip" style="background:'+c+'">'+lkey(s)+'</span> '+
+        (s.principal?money(s.principal)+' · ':'')+
+        (s.units.length>1?(s.units.length-vacU)+' occ / '+vacU+' vac':(s.units[0].vacant?'Vacant':(s.units[0].tenant||'Occupied')))+'</div>';
+      d.onclick=()=>focusSite(cssid(s.site));box.appendChild(d);});
+    el.appendChild(box);
+  });
+}
+function renderRepairs(){
+  const el=document.getElementById('repairs');el.innerHTML='';
+  const sorted=[...REPAIRS].sort((a,b)=>{const so={open:0,prog:1,done:2},po={urgent:0,normal:1,low:2};return so[a.status]-so[b.status]||po[a.pri]-po[b.pri]});
+  sorted.forEach(r=>{const i=REPAIRS.indexOf(r);const tr=document.createElement('tr');
+    tr.innerHTML='<td class="addr">'+r.addr+'</td><td><span class="pri '+r.pri+'">'+r.pri.toUpperCase()+'</span></td>'+
+      '<td><select class="mini" onchange="setStatus('+i+',this.value)">'+
+        '<option value="open" '+(r.status==='open'?'selected':'')+'>Open</option>'+
+        '<option value="prog" '+(r.status==='prog'?'selected':'')+'>In progress</option>'+
+        '<option value="done" '+(r.status==='done'?'selected':'')+'>Done</option></select></td>'+
+      '<td class="note">'+r.note+'</td>';el.appendChild(tr);});
+}
+function setStatus(i,v){REPAIRS[i].status=v;renderAll()}
+function setFilter(f){FILTER=f;document.querySelectorAll('.fchip').forEach(c=>c.classList.toggle('on',c.dataset.f===f));renderMap();renderGroups()}
+function setMode(m){MODE=m;document.getElementById('m-status').classList.toggle('on',m==='status');document.getElementById('m-lender').classList.toggle('on',m==='lender');renderMap();renderSnapLegend();}
+function addRepair(){const addr=prompt('Unit / address (e.g. 430 Fridell St):');if(!addr)return;
+  const note=prompt('Describe the repair:')||'';const pri=(prompt('Priority: urgent / normal / low','normal')||'normal').toLowerCase();
+  REPAIRS.push({addr:addr,status:'open',pri:['urgent','normal','low'].indexOf(pri)>=0?pri:'normal',note:note});renderAll();}
+function renderAll(){renderKPIs();renderVacancies();renderLenders();renderSnapLegend();renderMap();renderGroups();renderRepairs()}
+renderAll();
+</script>
+</body>
+</html>
